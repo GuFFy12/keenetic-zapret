@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ZAPRET_VERSION: v70.3
+      ZAPRET_VERSION: v70.4
 
     steps:
       - name: Checkout main repository
