@@ -31,7 +31,7 @@ do_stop() {
 }
 
 usage() {
-	echo "Usage: $SCRIPT {start|stop|restart}" >&2
+	echo "Usage: $SCRIPT <start|stop|restart>" >&2
 	exit 1
 }
 
