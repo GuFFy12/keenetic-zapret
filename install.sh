@@ -61,15 +61,10 @@ get_zapret_config_iface_wan() {
 if ! command -v ndmc >/dev/null; then
 	echo Command 'ndmc' not found >&2
 	exit 1
-elif ! NDM_VERSION="$(ndmc -c show version | grep -w title | head -n 1 | awk '{print $2}' | tr -cd '0-9.')"; then
-	echo Failed to retrieve NDM version >&2
-	exit 1
-elif [ -z "$NDM_VERSION" ]; then
-	echo Invalid or missing NDM version >&2
-	exit 1
-elif [ "${NDM_VERSION%%.*}" -lt 4 ]; then
-	# ndm/iflayerchanged.d does not exist in versions below 4.0.0
-	echo "NDM version $NDM_VERSION is less than 4.0.0" >&2
+fi
+NDM_VERSION="$(ndmc -c show version | grep -w title | head -n 1 | awk '{print $2}' | tr -cd '0-9.')"
+if [ -z "$NDM_VERSION" ]; then
+	echo Invalid or missing Keenetic version >&2
 	exit 1
 fi
 
