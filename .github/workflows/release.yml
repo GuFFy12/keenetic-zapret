@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ZAPRET_VERSION: v70.4
+      ZAPRET_VERSION: v70.5
 
     steps:
       - name: Checkout main repository
@@ -18,30 +18,30 @@ jobs:
 
       - name: Download and configuring zapret
         run: |
-          ZAPRET_FILE="zapret-${{ env.ZAPRET_VERSION }}.tar.gz"
-          ZAPRET_URL="https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_VERSION }}/$ZAPRET_FILE"
-          ZAPRET_FILE_TMP="/tmp/$ZAPRET_FILE"
-          ZAPRET_DIR="${{ github.workspace }}/opt/zapret"
+          ZAPRET_BUILD_FILE="zapret-${{ env.ZAPRET_VERSION }}.tar.gz"
+          ZAPRET_BUILD_FILE_URL="https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_VERSION }}/$BUILD_FILE"
+          ZAPRET_BUILD_FILE_PATH="/tmp/$ZAPRET_BUILD_FILE"
+          ZAPRET_BASE_DIR="${{ github.workspace }}/opt/zapret"
 
           echo Installing curl...
           sudo apt-get install -y curl
 
           echo Downloading zapret release...
-          curl -f -L -o "$ZAPRET_FILE_TMP" "$ZAPRET_URL"
+          curl -f -L -o "$ZAPRET_BUILD_FILE_PATH" "$ZAPRET_BUILD_FILE_URL"
 
           echo Unarchive zapret release to workspace...
-          tar -xvzf "$ZAPRET_FILE_TMP" --strip-components=1 -C "$ZAPRET_DIR"
+          tar -xvzf "$ZAPRET_BUILD_FILE_PATH" --strip-components=1 -C "$ZAPRET_BASE_DIR"
 
-          echo Downloading ipset list...
-          "$ZAPRET_DIR/ipset/get_config.sh"
+          echo Downloading block list...
+          "$ZAPRET_BASE_DIR/ipset/get_config.sh"
 
       - name: Create a new release
         run: |
-          RELEASE_TAG="${GITHUB_REF#refs/tags/}"
-          RELEASE_FILE="${{ github.event.repository.name }}-$RELEASE_TAG.tar.gz"
-          RELEASE_FILE_TMP="/tmp/$RELEASE_FILE"
+          TAG="${GITHUB_REF#refs/tags/}"
+          BUILD_FILE="${{ github.event.repository.name }}-$TAG.tar.gz"
+          BUILD_FILE_PATH="/tmp/$BUILD_FILE"
 
-          tar -czf "$RELEASE_FILE_TMP" --exclude='.git' --exclude='.github' --exclude='.gitignore' -C "${{ github.workspace }}" .
-          gh release create "$RELEASE_TAG" "$RELEASE_FILE_TMP" --generate-notes
+          tar -czf "$BUILD_FILE_PATH" --exclude='.git' --exclude='.github' --exclude='.gitignore' -C "${{ github.workspace }}" .
+          gh release create "$TAG" "$BUILD_FILE_PATH" --generate-notes
         env:
           GH_TOKEN: "${{ secrets.PERSONAL_ACCESS_TOKEN }}"
