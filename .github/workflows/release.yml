@@ -19,7 +19,7 @@ jobs:
       - name: Download and configuring zapret
         run: |
           ZAPRET_BUILD_FILE="zapret-${{ env.ZAPRET_VERSION }}.tar.gz"
-          ZAPRET_BUILD_FILE_URL="https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_VERSION }}/$BUILD_FILE"
+          ZAPRET_BUILD_FILE_URL="https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_VERSION }}/$ZAPRET_BUILD_FILE"
           ZAPRET_BUILD_FILE_PATH="/tmp/$ZAPRET_BUILD_FILE"
           ZAPRET_BASE_DIR="${{ github.workspace }}/opt/zapret"
 
