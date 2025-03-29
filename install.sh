@@ -4,11 +4,12 @@ IFS=$'\n\t'
 
 RELEASE_TAG=v1.1.0
 
-ZAPRET_BASE="${ZAPRET_BASE:-/opt/zapret}"
-ZAPRET_SCRIPT="${ZAPRET_SCRIPT:-"$ZAPRET_BASE/init.d/sysv/zapret_keenetic.sh"}"
-ZAPRET_CONFIG="${ZAPRET_CONFIG:-"$ZAPRET_BASE/config"}"
-ZAPRET_INSTALL_BIN="${ZAPRET_INSTALL_BIN:-"$ZAPRET_BASE/install_bin.sh"}"
-ZAPRET_GET_CONFIG="${ZAPRET_GET_CONFIG:-"$ZAPRET_BASE/ipset/get_config.sh"}"
+ZAPRET_BASE="${ZAPRET_RW:-/opt/zapret}"
+ZAPRET_RW=${ZAPRET_RW:-"$ZAPRET_BASE"}
+ZAPRET_SCRIPT="${ZAPRET_SCRIPT:-"$ZAPRET_RW/init.d/sysv/zapret_keenetic.sh"}"
+ZAPRET_CONFIG="${ZAPRET_CONFIG:-"$ZAPRET_RW/config"}"
+ZAPRET_INSTALL_BIN="${ZAPRET_INSTALL_BIN:-"$ZAPRET_RW/install_bin.sh"}"
+ZAPRET_GET_CONFIG="${ZAPRET_GET_CONFIG:-"$ZAPRET_RW/ipset/get_config.sh"}"
 
 ask_yes_no() {
 	while true; do
@@ -72,7 +73,7 @@ echo Installing packages...
 opkg update && opkg install coreutils-sort cron curl grep gzip ipset iptables kmod_ndms xtables-addons_legacy
 
 echo Installing Keenetic Zapret...
-delete_service "$ZAPRET_BASE" "$ZAPRET_SCRIPT"
+delete_service "$ZAPRET_RW" "$ZAPRET_SCRIPT"
 if [ -n "$(readlink -f "$0")" ]; then
 	cp -r opt/* /opt/
 else

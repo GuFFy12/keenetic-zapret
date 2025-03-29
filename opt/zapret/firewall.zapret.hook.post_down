@@ -22,11 +22,11 @@ ipt_del() {
 }
 
 # https://ntc.party/t/zapret-whats-new/61/71
-for IFACE_WAN_N in $IFACE_WAN; do
-	ipt_print_op 0 _NDM_MASQ "$IFACE_WAN_N"
-	ipt_del _NDM_MASQ -t nat -o "$IFACE_WAN_N" -j MASQUERADE
+for iface_wan in $IFACE_WAN; do
+	ipt_print_op 0 _NDM_MASQ "$iface_wan"
+	ipt_del _NDM_MASQ -t nat -o "$iface_wan" -j MASQUERADE
 
 	# There is no _NDM_MASQ for IPv6 by default, but it MIGHT be present if IPv6 support is enabled in the router settings.
 	# If you see _NDM_MASQ when running `ip6tables-save -t nat`, uncomment these lines.
-	# ipt6_del _NDM_MASQ -t nat -o "$IFACE_WAN_N" -j MASQUERADE
+	# ipt6_del _NDM_MASQ -t nat -o "$iface_wan" -j MASQUERADE
 done
