@@ -21,19 +21,17 @@ jobs:
           ZAPRET_BUILD_FILE="zapret-${{ env.ZAPRET_VERSION }}.tar.gz"
           ZAPRET_BUILD_FILE_URL="https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_VERSION }}/$ZAPRET_BUILD_FILE"
           ZAPRET_BUILD_FILE_PATH="/tmp/$ZAPRET_BUILD_FILE"
-          ZAPRET_BASE_DIR="${{ github.workspace }}/opt/zapret"
+          ZAPRET_BASE_DIR="opt/zapret"
+          ZAPRET_IPSET_GET_CONFIG="$ZAPRET_BASE_DIR/ipset/get_config.sh"
 
           echo Installing curl...
           sudo apt-get install -y curl
 
           echo Downloading zapret release...
-          curl -f -L -o "$ZAPRET_BUILD_FILE_PATH" "$ZAPRET_BUILD_FILE_URL"
-
-          echo Unarchive zapret release to workspace...
-          tar -xvzf "$ZAPRET_BUILD_FILE_PATH" --strip-components=1 -C "$ZAPRET_BASE_DIR"
+          curl -fL "$ZAPRET_BUILD_FILE_URL" | tar -xvzf - --strip-components=1 -C "$ZAPRET_BASE_DIR"
 
           echo Downloading block list...
-          "$ZAPRET_BASE_DIR/ipset/get_config.sh"
+          "$ZAPRET_IPSET_GET_CONFIG"
 
       - name: Create a new release
         run: |
@@ -41,7 +39,7 @@ jobs:
           BUILD_FILE="${{ github.event.repository.name }}-$TAG.tar.gz"
           BUILD_FILE_PATH="/tmp/$BUILD_FILE"
 
-          tar -czf "$BUILD_FILE_PATH" --exclude='.git' --exclude='.github' --exclude='.gitignore' -C "${{ github.workspace }}" .
+          tar -czf "$BUILD_FILE_PATH" --exclude={.git,.github,.gitignore} .
           gh release create "$TAG" "$BUILD_FILE_PATH" --generate-notes
         env:
           GH_TOKEN: "${{ secrets.PERSONAL_ACCESS_TOKEN }}"

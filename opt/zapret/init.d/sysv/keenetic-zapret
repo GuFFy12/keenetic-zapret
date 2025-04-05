@@ -3,8 +3,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 SCRIPT="$(readlink -f "$0")"
-EXEDIR=$(dirname "$SCRIPT")
-ZAPRET_SCRIPT="$EXEDIR/zapret"
+ZAPRET_SCRIPT="$(dirname "$SCRIPT")/zapret"
 KERNEL_VERSION="$(uname -r)"
 
 load_kernel_module() {
