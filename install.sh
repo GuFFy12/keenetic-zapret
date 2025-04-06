@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-RELEASE_TAG=v1.1.0
+RELEASE_TAG=v1.3.2
 
 ZAPRET_BASE="${ZAPRET_BASE:-/opt/zapret}"
 ZAPRET_SCRIPT="${ZAPRET_SCRIPT:-"$ZAPRET_BASE/init.d/sysv/zapret_keenetic.sh"}"
@@ -24,7 +24,11 @@ ask_yes_no() {
 }
 
 set_config_value() {
-	sed -i "s|^$2=.*|$2=$3|" "$1"
+	if grep -q "^$2=" "$1"; then
+		sed -i "s|^$2=.*|$2=$3|" "$1"
+	else
+		echo "$2=$3" >> "$1"
+	fi
 }
 
 add_cron_job() {
