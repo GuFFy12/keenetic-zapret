@@ -1,0 +1,42 @@
+name: Publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    env:
+      ZAPRET_TAG: v70.6
+
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+
+      - name: Download and configuring zapret
+        run: |
+          ZAPRET_BUILD_FILE_URL="https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_TAG }}/zapret-${{ env.ZAPRET_TAG }}.tar.gz"
+          ZAPRET_BASE_DIR="opt/zapret"
+          ZAPRET_IPSET_GET_CONFIG="$ZAPRET_BASE_DIR/ipset/get_config.sh"
+
+          echo Installing curl...
+          sudo apt-get install -y curl
+
+          echo Downloading Zapret release...
+          curl -fL "$ZAPRET_BUILD_FILE_URL" | tar -xz --strip-components=1 -C "$ZAPRET_BASE_DIR"
+
+          echo Downloading latest Zapret ipset list...
+          "$ZAPRET_IPSET_GET_CONFIG"
+
+      - name: Create a new release
+        run: |
+          BUILD_TAG="${GITHUB_REF#refs/tags/}"
+          BUILD_FILE_PATH="/tmp/${{ github.event.repository.name }}-$BUILD_TAG.tar.gz"
+
+          tar -czf "$BUILD_FILE_PATH" --exclude={.git,.github,.gitignore} .
+          gh release create "$BUILD_TAG" "$BUILD_FILE_PATH" --generate-notes
+        env:
+          GH_TOKEN: "${{ secrets.PERSONAL_ACCESS_TOKEN }}"
