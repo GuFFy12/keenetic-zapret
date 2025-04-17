@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euo pipefail
+set -euox pipefail
 IFS=$'\n\t'
 
 # If KEENETIC_ZAPRET_BUILD_FILE_URL set then KEENETIC_ZAPRET_REPO and KEENETIC_ZAPRET_TAG are ignored.
@@ -72,7 +72,7 @@ install_packages() {
 }
 
 install() {
-	SCRIPT="$(readlink -f "$0")"
+	SCRIPT="$(readlink -f "$0" || true)"
 	SCRIPT_DIR="$(dirname "$SCRIPT")"
 	if [ -n "$SCRIPT" ] && [ "$SCRIPT_DIR" != "/" ] && [ -d "$SCRIPT_DIR/opt" ]; then
 		cp -r "$SCRIPT_DIR/opt/"* /opt/
