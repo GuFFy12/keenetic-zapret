@@ -28,7 +28,7 @@
 - Выполните следующую команду:
 
   ```sh
-  opkg update && opkg install curl && sh -c "$(curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh)"
+  opkg update && opkg install curl && curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh
   ```
 
 - Или если хотите установить в режиме оффлайн, то разархивируйте на роутере

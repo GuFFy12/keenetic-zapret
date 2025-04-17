@@ -2,19 +2,6 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# There are several installation modes supported:
-#
-# 1. One-liner install command (recommended for quick setup):
-#    opkg update && opkg install curl && sh -c "$(curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh)"
-#
-# 2. Manual install from a full release archive:
-#    Download the release archive from GitHub, extract it, and run `sh install.sh` from the extracted folder.
-#
-# 3. Installer-only mode:
-#    If you prefer to keep only the installer script on the system (e.g., for performing future updates),
-#    and want to customize installation parameters, simply download this `install.sh` file manually,
-#    edit the global variables as needed, and run it.
-
 # If KEENETIC_ZAPRET_BUILD_FILE_URL set then KEENETIC_ZAPRET_REPO and KEENETIC_ZAPRET_TAG are ignored.
 KEENETIC_ZAPRET_BUILD_FILE_URL="${KEENETIC_ZAPRET_BUILD_FILE_URL-}"
 KEENETIC_ZAPRET_REPO="${KEENETIC_ZAPRET_REPO:-"GuFFy12/keenetic-zapret"}"
