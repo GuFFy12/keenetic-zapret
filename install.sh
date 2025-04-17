@@ -2,18 +2,40 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-KEENETIC_ZAPRET_REPO="${KEENETIC_ZAPRET_REPO:-GuFFy12/keenetic-zapret}"
+# There are several installation modes supported:
+#
+# 1. One-liner install command (recommended for quick setup):
+#    opkg update && opkg install curl && sh -c "$(curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh)"
+#
+# 2. Manual install from a full release archive:
+#    Download the release archive from GitHub, extract it, and run `sh install.sh` from the extracted folder.
+#
+# 3. Installer-only mode:
+#    If you prefer to keep only the installer script on the system (e.g., for performing future updates),
+#    and want to customize installation parameters, simply download this `install.sh` file manually,
+#    edit the global variables as needed, and run it.
+
+# If KEENETIC_ZAPRET_BUILD_FILE_URL set then KEENETIC_ZAPRET_REPO and KEENETIC_ZAPRET_TAG are ignored.
+KEENETIC_ZAPRET_BUILD_FILE_URL="${KEENETIC_ZAPRET_BUILD_FILE_URL-}"
+KEENETIC_ZAPRET_REPO="${KEENETIC_ZAPRET_REPO:-"GuFFy12/keenetic-zapret"}"
+KEENETIC_ZAPRET_TAG="${KEENETIC_ZAPRET_TAG-}"
+
 ZAPRET_BASE="${ZAPRET_BASE:-/opt/zapret}"
-KEENETIC_ZAPRET_SCRIPT="${KEENETIC_ZAPRET_SCRIPT:-"$ZAPRET_BASE/init.d/sysv/keenetic-zapret"}"
+
 ZAPRET_CONFIG="${ZAPRET_CONFIG:-"$ZAPRET_BASE/config"}"
+ZAPRET_CONFIG_IFACE_WAN="${ZAPRET_CONFIG_IFACE_WAN-}"
+
 ZAPRET_INSTALL_BIN="${ZAPRET_INSTALL_BIN:-"$ZAPRET_BASE/install_bin.sh"}"
-ZAPRET_IPSET_GET_CONFIG="${ZAPRET_GET_CONFIG:-"$ZAPRET_BASE/ipset/get_config.sh"}"
+
+ZAPRET_IPSET_GET_CONFIG="${ZAPRET_IPSET_GET_CONFIG:-"$ZAPRET_BASE/ipset/get_config.sh"}"
 ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE="${ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE:-"0 0 * * 0"}"
+
+KEENETIC_ZAPRET_SCRIPT="${KEENETIC_ZAPRET_SCRIPT:-"$ZAPRET_BASE/init.d/sysv/keenetic-zapret"}"
 
 ask_yes_no() {
 	while true; do
 		echo "$1 (Y/N): "
-		read -r answer
+		read -r answer </dev/tty
 
 		case "$answer" in
 		[yY1]) return 0 ;;
@@ -24,18 +46,14 @@ ask_yes_no() {
 }
 
 set_config_value() {
-	if grep -q "^$2=" "$1"; then
-		sed -i "s|^$2=.*|$2=\"$3\"|" "$1"
-	else
-		echo "$2=\"$3\"" >>"$1"
-	fi
+	touch "$1"
+	sed -i "/^$2=/d" "$1"
+	echo "$2=\"$3\"" >>"$1"
 }
 
 add_cron_job() {
 	{
-		crontab -l 2>/dev/null || true
-	} | grep -vF "$2" | {
-		cat
+		crontab -l 2>/dev/null || true | grep -vF "$2" || true
 		echo "$1 $2"
 	} | crontab -
 }
@@ -62,23 +80,26 @@ get_ndm_version() {
 }
 
 install_packages() {
-	opkg update && opkg install coreutils-sort cron curl grep gzip ipset iptables kmod_ndms xtables-addons_legacy
+	opkg update
+	opkg install coreutils-sort cron curl grep gzip ipset iptables kmod_ndms xtables-addons_legacy
 }
 
-setup() {
-	delete_service "$ZAPRET_BASE" "$KEENETIC_ZAPRET_SCRIPT"
-
-	if [ -n "$(readlink -f "$0")" ]; then
-		cp -r opt/* /opt/
+install() {
+	SCRIPT="$(readlink -f "$0")"
+	SCRIPT_DIR="$(dirname "$SCRIPT")"
+	if [ -n "$SCRIPT" ] && [ "$SCRIPT_DIR" != "/" ] && [ -d "$SCRIPT_DIR/opt" ]; then
+		cp -r "$SCRIPT_DIR/opt/"* /opt/
 	else
 		# Wait ~1s after delete_service to let system update (e.g. iptables).
 		# Without this, curl may fail due to incomplete network transition.
 		sleep 1
 
-		KEENETIC_ZAPRET_TAG="${KEENETIC_ZAPRET_TAG:-"$(curl -fL "https://api.github.com/repos/GuFFy12/keenetic-zapret/tags" | awk -F'"' '/"name":/ {print $4; exit}')"}"
-		KEENETIC_ZAPRET_URL="${KEENETIC_ZAPRET_URL:-"https://github.com/$KEENETIC_ZAPRET_REPO/releases/download/$KEENETIC_ZAPRET_TAG/keenetic-zapret-$KEENETIC_ZAPRET_TAG.tar.gz"}"
+		if [ -z "$KEENETIC_ZAPRET_BUILD_FILE_URL" ]; then
+			KEENETIC_ZAPRET_TAG="${KEENETIC_ZAPRET_TAG:-"$(curl -fL "https://api.github.com/repos/GuFFy12/keenetic-zapret/tags" | awk -F'"' '/"name":/ {print $4; exit}')"}"
+			KEENETIC_ZAPRET_BUILD_FILE_URL="${KEENETIC_ZAPRET_BUILD_FILE_URL:-"https://github.com/$KEENETIC_ZAPRET_REPO/releases/download/$KEENETIC_ZAPRET_TAG/keenetic-zapret-$KEENETIC_ZAPRET_TAG.tar.gz"}"
+		fi
 
-		curl -fL "$KEENETIC_ZAPRET_URL" | tar -xz -C / ./opt/
+		curl -fL "$KEENETIC_ZAPRET_BUILD_FILE_URL" | tar -xz -C / ./opt/
 	fi
 }
 
@@ -101,8 +122,11 @@ main() {
 	echo Installing packages...
 	install_packages
 
-	echo Setup Keenetic Zapret...
-	setup
+	echo Deleting old Keenetic Zapret installation...
+	delete_service "$ZAPRET_BASE" "$KEENETIC_ZAPRET_SCRIPT"
+
+	echo Install Keenetic Zapret...
+	install
 
 	echo Link Zapret binaries...
 	"$ZAPRET_INSTALL_BIN"
