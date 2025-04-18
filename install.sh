@@ -33,9 +33,7 @@ ask_yes_no() {
 }
 
 set_config_value() {
-	touch "$1"
-	sed -i "/^$2=/d" "$1"
-	echo "$2=\"$3\"" >>"$1"
+	sed -i "s/^$2=.*/$2=\"$3\"/;t;\$a $2=\"$3\"" "$1"
 }
 
 add_cron_job() {
