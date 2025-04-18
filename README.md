@@ -14,7 +14,7 @@
 
 ## Требования
 
-- [Keenetic OS](https://help.keenetic.com/hc/ru/articles/115000990005) версии 4.0 или выше.
+- [Keenetic OS](https://help.keenetic.com/hc/ru/articles/115000990005).
 - Установленный [Entware](https://help.keenetic.com/hc/ru/articles/360021214160).
 
 ## Шаги установки
@@ -24,6 +24,8 @@
 - В [компонентах KeeneticOS](https://help.keenetic.com/hc/ru/articles/360000358039) нужно включить `Kernel modules for Netfilter` или `Модули ядра подсистемы Netfilter`.
 
 ### 2. Установка необходимых компонентов
+
+- Перед выполнением установки вы опционально можете настроить глобальные переменные которые находятся в начале [установочного файла](https://github.com/GuFFy12/keenetic-zapret/blob/main/install.sh).
 
 - Выполните следующую команду:
 

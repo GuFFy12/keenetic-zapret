@@ -1,5 +1,5 @@
 #!/bin/sh
-set -euox pipefail
+set -euo pipefail
 IFS=$'\n\t'
 
 # If KEENETIC_ZAPRET_BUILD_FILE_URL set then KEENETIC_ZAPRET_REPO and KEENETIC_ZAPRET_TAG are ignored.

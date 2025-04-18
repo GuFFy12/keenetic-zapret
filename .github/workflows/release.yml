@@ -16,7 +16,7 @@ jobs:
       - name: Checkout main repository
         uses: actions/checkout@v4
 
-      - name: Download and configuring zapret
+      - name: Downloading Zapret
         run: |
           ZAPRET_BUILD_FILE_URL="https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_TAG }}/zapret-${{ env.ZAPRET_TAG }}.tar.gz"
           ZAPRET_BASE_DIR="opt/zapret"
