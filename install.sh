@@ -15,6 +15,7 @@ ZAPRET_CONFIG_IFACE_WAN="${ZAPRET_CONFIG_IFACE_WAN-}"
 ZAPRET_INSTALL_BIN="${ZAPRET_INSTALL_BIN:-"$ZAPRET_BASE/install_bin.sh"}"
 
 ZAPRET_IPSET_GET_CONFIG="${ZAPRET_IPSET_GET_CONFIG:-"$ZAPRET_BASE/ipset/get_config.sh"}"
+ZAPRET_IPSET_GET_CONFIG_USE_CRON="${ZAPRET_IPSET_GET_CONFIG_USE_CRON:-ask}" # "1" or "0" or "ask"
 ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE="${ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE:-"0 0 * * 0"}"
 
 KEENETIC_ZAPRET_SCRIPT="${KEENETIC_ZAPRET_SCRIPT:-"$ZAPRET_BASE/init.d/sysv/keenetic-zapret"}"
@@ -80,8 +81,11 @@ install() {
 		sleep 1
 
 		if [ -z "$KEENETIC_ZAPRET_BUILD_FILE_URL" ]; then
-			KEENETIC_ZAPRET_TAG="${KEENETIC_ZAPRET_TAG:-"$(curl -fL "https://api.github.com/repos/GuFFy12/keenetic-zapret/tags" | awk -F'"' '/"name":/ {print $4; exit}')"}"
-			KEENETIC_ZAPRET_BUILD_FILE_URL="${KEENETIC_ZAPRET_BUILD_FILE_URL:-"https://github.com/$KEENETIC_ZAPRET_REPO/releases/download/$KEENETIC_ZAPRET_TAG/keenetic-zapret-$KEENETIC_ZAPRET_TAG.tar.gz"}"
+			if [ -z "$KEENETIC_ZAPRET_TAG" ]; then
+				KEENETIC_ZAPRET_BUILD_FILE_URL="https://github.com/$KEENETIC_ZAPRET_REPO/releases/download/$KEENETIC_ZAPRET_TAG/keenetic-zapret-$KEENETIC_ZAPRET_TAG.tar.gz"
+			else
+				KEENETIC_ZAPRET_BUILD_FILE_URL="$(curl -fL "https://api.github.com/repos/$KEENETIC_ZAPRET_REPO/releases" | awk -F'"' '/"browser_download_url":/ {print $4; exit}')"
+			fi
 		fi
 
 		curl -fL "$KEENETIC_ZAPRET_BUILD_FILE_URL" | tar -xz -C / ./opt/
@@ -122,7 +126,8 @@ main() {
 		exit 1
 	fi
 
-	if ask_yes_no "Create a cron job to automatically update the Zapret ipset ($ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE)?"; then
+	if [ "$ZAPRET_IPSET_GET_CONFIG_USE_CRON" = "1" ] ||
+		{ [ "$ZAPRET_IPSET_GET_CONFIG_USE_CRON" = "ask" ] && ask_yes_no "Create a cron job to automatically update the Zapret ipset ($ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE)?"; }; then
 		add_cron_job "$ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE" "$ZAPRET_IPSET_GET_CONFIG"
 	fi
 
