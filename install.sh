@@ -39,7 +39,7 @@ set_config_value() {
 
 add_cron_job() {
 	{
-		crontab -l 2>/dev/null || true | grep -vF "$2" || true
+		{ crontab -l 2>/dev/null || true; } | grep -vF "$2" || true
 		echo "$1 $2"
 	} | crontab -
 }
