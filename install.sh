@@ -81,7 +81,7 @@ install() {
 		sleep 1
 
 		if [ -z "$KEENETIC_ZAPRET_BUILD_FILE_URL" ]; then
-			if [ -z "$KEENETIC_ZAPRET_TAG" ]; then
+			if [ -n "$KEENETIC_ZAPRET_TAG" ]; then
 				KEENETIC_ZAPRET_BUILD_FILE_URL="https://github.com/$KEENETIC_ZAPRET_REPO/releases/download/$KEENETIC_ZAPRET_TAG/keenetic-zapret-$KEENETIC_ZAPRET_TAG.tar.gz"
 			else
 				KEENETIC_ZAPRET_BUILD_FILE_URL="$(curl -fL "https://api.github.com/repos/$KEENETIC_ZAPRET_REPO/releases" | awk -F'"' '/"browser_download_url":/ {print $4; exit}')"
