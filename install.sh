@@ -154,7 +154,7 @@ install() {
 	echo Downloading latest Zapret ipset list...
 	"$ZAPRET_IPSET_GET_CONFIG"
 
-	echo Keenetic Zapret has been successfully installed. For further configuration please refer to README.md file!
+	echo Keenetic Zapret has been successfully installed.
 }
 
 usage() {

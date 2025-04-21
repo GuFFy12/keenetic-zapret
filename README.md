@@ -48,6 +48,8 @@
   curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh -s uninstall
   ```
 
+  или
+
   ```sh
   sh install.sh uninstall
   ```
