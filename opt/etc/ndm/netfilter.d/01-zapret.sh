@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/opt/bin/busybox sh
 set -euo pipefail
 IFS=$'\n\t'
 

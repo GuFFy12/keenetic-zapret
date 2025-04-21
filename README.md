@@ -23,6 +23,8 @@
 
 - В [компонентах KeeneticOS](https://help.keenetic.com/hc/ru/articles/360000358039) нужно включить `Kernel modules for Netfilter` или `Модули ядра подсистемы Netfilter`.
 
+- Опционально отключите [DNS от провайдера](https://help.keenetic.com/hc/ru/articles/360008609399) и настройте [DNS-over-HTTPS](https://help.keenetic.com/hc/ru/articles/360007687159), например от Google: `https://dns.google/dns-query`.
+
 ### 2. Установка необходимых компонентов
 
 - Перед выполнением установки вы опционально можете настроить глобальные переменные которые находятся в начале [установочного файла](https://github.com/GuFFy12/keenetic-zapret/blob/main/install.sh).
@@ -38,6 +40,16 @@
 
   ```sh
   sh install.sh
+  ```
+
+- Для удаления выполните соответственно:
+
+  ```sh
+  curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh -s uninstall
+  ```
+
+  ```sh
+  sh install.sh uninstall
   ```
 
 ### 3. Конфигурация Zapret ([`/opt/zapret/config`](https://github.com/bol-van/zapret))

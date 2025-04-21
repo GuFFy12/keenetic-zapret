@@ -1,31 +1,34 @@
-#!/bin/sh
+#!/opt/bin/busybox sh
 set -euo pipefail
 IFS=$'\n\t'
+
+# region Constants
+SCRIPT="$(readlink -f "$0" || true)"
+
+ZAPRET_BASE="/opt/zapret"
+ZAPRET_INSTALL_BIN="$ZAPRET_BASE/install_bin.sh"
+ZAPRET_IPSET_GET_CONFIG="$ZAPRET_BASE/ipset/get_config.sh"
+ZAPRET_NDM_HOOK_SCRIPTS="/opt/etc/ndm/netfilter.d/01-zapret.sh"
+KEENETIC_ZAPRET_SCRIPT="$ZAPRET_BASE/init.d/sysv/keenetic-zapret"
+# endregion
+
+# region Configurable variables
+ZAPRET_IPSET_GET_CONFIG_ENABLE_CRON="${ZAPRET_IPSET_GET_CONFIG_CRON:-ask}" # "1" or "0" or "ask"
+ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE="${ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE:-"0 0 * * 0"}"
 
 # If KEENETIC_ZAPRET_BUILD_FILE_URL set then KEENETIC_ZAPRET_REPO and KEENETIC_ZAPRET_TAG are ignored.
 KEENETIC_ZAPRET_BUILD_FILE_URL="${KEENETIC_ZAPRET_BUILD_FILE_URL-}"
 KEENETIC_ZAPRET_REPO="${KEENETIC_ZAPRET_REPO:-"GuFFy12/keenetic-zapret"}"
 KEENETIC_ZAPRET_TAG="${KEENETIC_ZAPRET_TAG-}"
+# endregion
 
-ZAPRET_BASE="${ZAPRET_BASE:-/opt/zapret}"
-
-ZAPRET_CONFIG="${ZAPRET_CONFIG:-"$ZAPRET_BASE/config"}"
-ZAPRET_CONFIG_IFACE_WAN="${ZAPRET_CONFIG_IFACE_WAN-}"
-
-ZAPRET_INSTALL_BIN="${ZAPRET_INSTALL_BIN:-"$ZAPRET_BASE/install_bin.sh"}"
-
-ZAPRET_IPSET_GET_CONFIG="${ZAPRET_IPSET_GET_CONFIG:-"$ZAPRET_BASE/ipset/get_config.sh"}"
-ZAPRET_IPSET_GET_CONFIG_USE_CRON="${ZAPRET_IPSET_GET_CONFIG_USE_CRON:-ask}" # "1" or "0" or "ask"
-ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE="${ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE:-"0 0 * * 0"}"
-
-KEENETIC_ZAPRET_SCRIPT="${KEENETIC_ZAPRET_SCRIPT:-"$ZAPRET_BASE/init.d/sysv/keenetic-zapret"}"
-
+# region Functions
 ask_yes_no() {
 	while true; do
-		echo "$1 (Y/N): "
-		read -r answer </dev/tty
+		echo "$1 [Y/n]: "
+		read -r ask_yes_no_answer </dev/tty
 
-		case "$answer" in
+		case "$ask_yes_no_answer" in
 		[yY1]) return 0 ;;
 		[nN0]) return 1 ;;
 		*) echo Invalid choice ;;
@@ -33,25 +36,28 @@ ask_yes_no() {
 	done
 }
 
-set_config_value() {
-	sed -i "s/^$2=.*/$2=\"$3\"/;t;\$a $2=\"$3\"" "$1"
+ask_value() {
+	while true; do
+		echo "$1 [default: \"$2\"]: "
+		read -r ask_value_answer </dev/tty
+
+		if [ -z "$ask_value_answer" ]; then
+			ask_value_answer="$2"
+		fi
+
+		if ask_yes_no "Is \"$ask_value_answer\" correct?"; then
+			break
+		fi
+	done
 }
 
-add_cron_job() {
+set_cron_job() {
 	{
-		{ crontab -l 2>/dev/null || true; } | grep -vF "$2" || true
-		echo "$1 $2"
+		{ crontab -l 2>/dev/null || true; } | sed '1,3{/^#/d}' | grep -vF "$3" || true
+		if [ "$1" = "1" ]; then
+			echo "$2 $3"
+		fi
 	} | crontab -
-}
-
-delete_service() {
-	if [ -f "$2" ] && ! "$2" stop; then
-		echo "Failed to stop service using script: $2" >&2
-	fi
-
-	if [ -d "$1" ]; then
-		rm -r "$1"
-	fi
 }
 
 get_ndm_version() {
@@ -59,19 +65,56 @@ get_ndm_version() {
 		return 1
 	fi
 
-	NDM_VERSION="$(ndmc -c show version | grep -w title | head -n 1 | awk '{print $2}' | tr -cd "0-9.")"
-	if [ -z "$NDM_VERSION" ]; then
+	ndm_version="$(ndmc -c show version | grep -w title | head -n 1 | awk '{print $2}' | tr -cd "0-9.")"
+	if [ -z "$ndm_version" ]; then
 		return 1
 	fi
 }
+# endregion
 
 install_packages() {
 	opkg update
 	opkg install coreutils-sort cron curl grep gzip ipset iptables kmod_ndms xtables-addons_legacy
 }
 
+uninstall() {
+	echo Stopping Keenetic Zapret...
+	if [ -f "$KEENETIC_ZAPRET_SCRIPT" ] && ! "$KEENETIC_ZAPRET_SCRIPT" stop; then
+		echo "Error: Failed to stop Keenetic Zapret." >&2
+	fi
+
+	echo Removing Keenetic Zapret...
+	if [ -d "$ZAPRET_BASE" ]; then
+		rm -r "$ZAPRET_BASE"
+	fi
+
+	local ifs_old="$IFS"
+	IFS=' '
+	for ndm_hook_script in $ZAPRET_NDM_HOOK_SCRIPTS; do
+		echo "Removing Keenetic NDM hook script \"$ndm_hook_script\"..."
+		if [ -f "$ndm_hook_script" ]; then
+			rm -f "$ndm_hook_script"
+		fi
+	done
+	IFS="$ifs_old"
+
+	echo Removing cron job for automatic list updates...
+	set_cron_job 0 "" "$ZAPRET_IPSET_GET_CONFIG" || true
+}
+
 install() {
-	SCRIPT="$(readlink -f "$0" || true)"
+	if ! get_ndm_version; then
+		echo Error: Keenetic NDM version not found or invalid. >&2
+		exit 1
+	fi
+
+	echo Installing required packages...
+	install_packages
+
+	echo Uninstall previous Zapret installation...
+	uninstall
+
+	echo Install Keenetic Zapret...
 	SCRIPT_DIR="$(dirname "$SCRIPT")"
 	if [ -n "$SCRIPT" ] && [ "$SCRIPT_DIR" != "/" ] && [ -d "$SCRIPT_DIR/opt" ]; then
 		cp -r "$SCRIPT_DIR/opt/"* /opt/
@@ -90,54 +133,48 @@ install() {
 
 		curl -fL "$KEENETIC_ZAPRET_BUILD_FILE_URL" | tar -xz -C / ./opt/
 	fi
-}
-
-configure() {
-	ZAPRET_CONFIG_IFACE_WAN="${ZAPRET_CONFIG_IFACE_WAN:-"$(ip route show default 0.0.0.0/0 | awk '{print $5}')"}"
-
-	if [ -z "$ZAPRET_CONFIG_IFACE_WAN" ]; then
-		return 1
-	fi
-
-	set_config_value "$ZAPRET_CONFIG" "IFACE_WAN" "$ZAPRET_CONFIG_IFACE_WAN"
-}
-
-main() {
-	if ! get_ndm_version; then
-		echo Invalid or missing Keenetic version >&2
-		exit 1
-	fi
-
-	echo Installing packages...
-	install_packages
-
-	echo Deleting old Keenetic Zapret installation...
-	delete_service "$ZAPRET_BASE" "$KEENETIC_ZAPRET_SCRIPT"
-
-	echo Install Keenetic Zapret...
-	install
 
 	echo Link Zapret binaries...
 	"$ZAPRET_INSTALL_BIN"
 
-	echo Configuring Zapret...
-	if ! configure; then
-		echo Failed to retrieve WAN interface for Zapret >&2
-		exit 1
+	if [ "$ZAPRET_IPSET_GET_CONFIG_ENABLE_CRON" = "ask" ] && ask_yes_no "Enable cron job for automatic list updates?"; then
+		ask_value "Enter cron schedule" "$ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE"
+		ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE="$ask_value_answer"
+		ZAPRET_IPSET_GET_CONFIG_ENABLE_CRON="1"
+	fi
+	if [ "$ZAPRET_IPSET_GET_CONFIG_ENABLE_CRON" = "1" ]; then
+		set_cron_job 1 "$ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE" "$ZAPRET_IPSET_GET_CONFIG"
 	fi
 
-	if [ "$ZAPRET_IPSET_GET_CONFIG_USE_CRON" = "1" ] ||
-		{ [ "$ZAPRET_IPSET_GET_CONFIG_USE_CRON" = "ask" ] && ask_yes_no "Create a cron job to automatically update the Zapret ipset ($ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE)?"; }; then
-		add_cron_job "$ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE" "$ZAPRET_IPSET_GET_CONFIG"
-	fi
-
-	echo Starting Zapret...
+	echo Starting Keenetic Zapret...
 	"$KEENETIC_ZAPRET_SCRIPT" start
 
 	echo Downloading latest Zapret ipset list...
 	"$ZAPRET_IPSET_GET_CONFIG"
-
-	echo Keenetic Zapret has been successfully installed. For further configuration please refer to README.md file!
 }
 
-main
+usage() {
+	echo "Usage: $SCRIPT [install|uninstall]" >&2
+	exit 1
+}
+
+if [ "$#" -gt 1 ]; then
+	usage
+elif [ -z "${1:-}" ]; then
+	set -- install
+fi
+case "$1" in
+install)
+	install
+	;;
+
+uninstall)
+	uninstall
+	;;
+
+*)
+	usage
+	;;
+esac
+
+exit 0
