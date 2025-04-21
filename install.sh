@@ -100,6 +100,8 @@ uninstall() {
 
 	echo Removing cron job for automatic list updates...
 	set_cron_job 0 "" "$ZAPRET_IPSET_GET_CONFIG" || true
+
+	echo Keenetic Zapret has been successfully uninstalled.
 }
 
 install() {
@@ -151,6 +153,8 @@ install() {
 
 	echo Downloading latest Zapret ipset list...
 	"$ZAPRET_IPSET_GET_CONFIG"
+
+	echo Keenetic Zapret has been successfully installed. For further configuration please refer to README.md file!
 }
 
 usage() {
