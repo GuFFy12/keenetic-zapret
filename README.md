@@ -29,10 +29,10 @@
 
 - Перед выполнением установки вы опционально можете настроить глобальные переменные которые находятся в начале [установочного файла](https://github.com/GuFFy12/keenetic-zapret/blob/main/install.sh).
 
-- Выполните следующую команду:
+- Для установки выполните следующую команду:
 
   ```sh
-  opkg update && opkg install curl && curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh
+  opkg update && opkg install curl && curl -LsSf https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh
   ```
 
 - Или если хотите установить в режиме оффлайн, то разархивируйте на роутере
@@ -48,8 +48,8 @@
   curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh -s uninstall
   ```
 
-  или
+- Управление cronjob для регулярного обновления ipset list:
 
   ```sh
-  sh install.sh uninstall
+  curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh -s <add-cronjob|remove-cronjob>
   ```

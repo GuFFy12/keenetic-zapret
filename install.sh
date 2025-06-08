@@ -13,8 +13,8 @@ KEENETIC_ZAPRET_SCRIPT="$ZAPRET_BASE/init.d/sysv/keenetic-zapret"
 # endregion
 
 # region Configurable variables
-ZAPRET_IPSET_GET_CONFIG_ENABLE_CRON="${ZAPRET_IPSET_GET_CONFIG_CRON:-ask}" # "1" or "0" or "ask"
-ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE="${ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE:-"0 0 * * 0"}"
+ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB="${ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB:-ask}" # "1" or "0" or "ask"
+ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE="${ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE:-"0 0 * * 0"}"
 
 # If KEENETIC_ZAPRET_BUILD_FILE_URL set then KEENETIC_ZAPRET_REPO and KEENETIC_ZAPRET_TAG are ignored.
 KEENETIC_ZAPRET_BUILD_FILE_URL="${KEENETIC_ZAPRET_BUILD_FILE_URL-}"
@@ -51,7 +51,7 @@ ask_value() {
 	done
 }
 
-set_cron_job() {
+set_cronjob() {
 	{
 		{ crontab -l 2>/dev/null || true; } | sed '1,3{/^#/d}' | grep -vF "$3" || true
 		if [ "$1" = "1" ]; then
@@ -99,7 +99,7 @@ uninstall() {
 	IFS="$ifs_old"
 
 	echo Removing cron job for automatic list updates...
-	set_cron_job 0 "" "$ZAPRET_IPSET_GET_CONFIG" || true
+	set_cronjob 0 "" "$ZAPRET_IPSET_GET_CONFIG" || true
 
 	echo Keenetic Zapret has been successfully uninstalled.
 }
@@ -139,22 +139,26 @@ install() {
 	echo Link Zapret binaries...
 	"$ZAPRET_INSTALL_BIN"
 
-	if [ "$ZAPRET_IPSET_GET_CONFIG_ENABLE_CRON" = "ask" ] && ask_yes_no "Enable cron job for automatic list updates?"; then
-		ask_value "Enter cron schedule" "$ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE"
-		ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE="$ask_value_answer"
-		ZAPRET_IPSET_GET_CONFIG_ENABLE_CRON="1"
-	fi
-	if [ "$ZAPRET_IPSET_GET_CONFIG_ENABLE_CRON" = "1" ]; then
-		set_cron_job 1 "$ZAPRET_IPSET_GET_CONFIG_CRON_SCHEDULE" "$ZAPRET_IPSET_GET_CONFIG"
-	fi
-
 	echo Starting Keenetic Zapret...
 	"$KEENETIC_ZAPRET_SCRIPT" start
 
 	echo Downloading latest Zapret ipset list...
 	"$ZAPRET_IPSET_GET_CONFIG"
 
+	if [ "$ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB" = "1" ] || \
+	{ [ "$ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB" = "ask" ] && ask_yes_no "Enable cron job for automatic ipset list updates?"; }; then
+		add_cronjob
+	fi
+
 	echo Keenetic Zapret has been successfully installed.
+}
+
+add_cronjob() {
+	if [ "$ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB" = "ask" ]; then
+		ask_value "Enter cron schedule" "$ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE"
+		ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE="$ask_value_answer"
+	fi
+	set_cronjob 1 "$ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE" "$ZAPRET_IPSET_GET_CONFIG"
 }
 
 usage() {
@@ -174,6 +178,14 @@ install)
 
 uninstall)
 	uninstall
+	;;
+
+add-cronjob|add_cronjob)
+	add_cronjob
+	;;
+
+remove-cronjob|remove_cronjob)
+	set_cronjob 0 "" "$ZAPRET_IPSET_GET_CONFIG" || true
 	;;
 
 *)
