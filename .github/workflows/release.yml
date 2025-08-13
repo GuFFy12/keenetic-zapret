@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      ZAPRET_TAG: v71
+      ZAPRET_TAG: v71.3
 
     steps:
       - name: Checkout main repository
