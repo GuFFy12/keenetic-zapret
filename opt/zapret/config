@@ -47,6 +47,12 @@ GZIP_LISTS=1
 DESYNC_MARK=0x40000000
 DESYNC_MARK_POSTNAT=0x20000000
 
+# do not pass outgoing traffic to tpws/nfqws not marked with this bit
+# this setting allows to write your own rules to limit traffic that should be fooled
+# for example based on source IP or incoming interface name
+# no filter if not defined
+#FILTER_MARK=0x10000000
+
 TPWS_SOCKS_ENABLE=0
 # tpws socks listens on this port on localhost and LAN interfaces
 TPPORT_SOCKS=987
@@ -75,9 +81,9 @@ NFQWS_PORTS_UDP=443,50000-50099
 # PKT_OUT means connbytes dir original
 # PKT_IN means connbytes dir reply
 # this is --dpi-desync-cutoff=nX kernel mode implementation for linux. it saves a lot of CPU.
-NFQWS_TCP_PKT_OUT=$((6 + $AUTOHOSTLIST_RETRANS_THRESHOLD))
+NFQWS_TCP_PKT_OUT=$((6+$AUTOHOSTLIST_RETRANS_THRESHOLD))
 NFQWS_TCP_PKT_IN=3
-NFQWS_UDP_PKT_OUT=$((6 + $AUTOHOSTLIST_RETRANS_THRESHOLD))
+NFQWS_UDP_PKT_OUT=$((6+$AUTOHOSTLIST_RETRANS_THRESHOLD))
 NFQWS_UDP_PKT_IN=0
 # redirect outgoing traffic without connbytes limiter and incoming with connbytes limiter
 # normally it's needed only for stateless DPI that matches every packet in a single TCP session
@@ -107,7 +113,7 @@ FLOWOFFLOAD=donttouch
 #OPENWRT_WAN6="wan6 vpn6"
 
 # for routers based on desktop linux and macos. has no effect in openwrt.
-# CHOOSE LAN and optionally WAN/WAN6 NETWORK INTERFACES
+# CHOOSE LAN and optinally WAN/WAN6 NETWORK INTERFACES
 # or leave them commented if its not router
 # it's possible to specify multiple interfaces like this : IFACE_LAN="eth0 eth1 eth2"
 # if IFACE_WAN6 is not defined it take the value of IFACE_WAN
@@ -128,6 +134,11 @@ INIT_APPLY_FW=1
 #DISABLE_IPV4=1
 # do not work with ipv6
 DISABLE_IPV6=1
+
+# drop icmp time exceeded messages for nfqws tampered connections
+# in POSTNAT mode this can interfere with default mtr/traceroute in tcp or udp mode. use source port not redirected to nfqws
+# set to 0 if you are not expecting connection breakage due to icmp in response to TCP SYN or UDP
+FILTER_TTL_EXPIRED_ICMP=1
 
 # select which init script will be used to get ip or host list
 # possible values : get_user.sh get_antizapret.sh get_combined.sh get_reestr.sh get_hostlist.sh
