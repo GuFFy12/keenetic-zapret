@@ -162,7 +162,7 @@ add_cronjob() {
 }
 
 usage() {
-	echo "Usage: $SCRIPT [install|uninstall]" >&2
+	echo "Usage: $SCRIPT [install|uninstall|add-cronjob|remove-cronjob]" >&2
 	exit 1
 }
 
