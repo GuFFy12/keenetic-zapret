@@ -30,7 +30,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Fetch latest Zapret ipset list"
-          /opt/zapret/ipset/get_config.sh
+          ./opt/zapret/ipset/get_config.sh
           echo "::endgroup::"
 
       - name: Build package
