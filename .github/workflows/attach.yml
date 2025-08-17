@@ -86,7 +86,7 @@ jobs:
           Architecture: $ARCHITECTURE
           Maintainer: $MAINTAINER
           Description: $DESCRIPTION
-          Depends: $(printf '%s\n' "$DEPENDS" | paste -sd ", " -)
+          Depends: $(echo "$DEPENDS" | tr '\n' ', ')
           EOF
 
           cat > "$CONTROL_DIR/postinst" <<EOF
