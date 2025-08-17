@@ -77,8 +77,7 @@ jobs:
 
           VERSION="${GITHUB_REF_NAME#v}"
           BUILD_FILE_NAME="${PACKAGE}_${VERSION}_${ARCHITECTURE}.ipk"
-          
-          echo "::group::Create package control files"
+
           mkdir -p "$CONTROL_DIR"
 
           cat > "$CONTROL_DIR/control" <<EOF
@@ -115,7 +114,6 @@ jobs:
           } > "$CONTROL_DIR/conffiles"
 
           chmod 0755 "$CONTROL_DIR/postinst" "$CONTROL_DIR/prerm"
-          echo "::endgroup::"
           
           echo "::group::Build package"
           tar --owner=0 --group=0 -C "$CONTROL_DIR" -czf ./control.tar.gz .
@@ -125,7 +123,6 @@ jobs:
           tar -czf "./$BUILD_FILE_NAME" ./debian-binary ./control.tar.gz ./data.tar.gz
 
           echo "build_file_path=./$BUILD_FILE_NAME" >> "$GITHUB_OUTPUT"
-          echo "::endgroup::"
 
       - name: Attach build file to release
         env:
@@ -136,7 +133,5 @@ jobs:
         run: |
           set -euo pipefail
           IFS=$'\n\t'
-          
-          echo "::group::Attach build file to release"
-          gh release create "$BUILD_TAG" "$BUILD_FILE_PATH" --clobber
-          echo "build_file_path=$BUILD_FILE_PATH" >> "$GITHUB_OUTPUT"
+
+          gh release upload "$BUILD_TAG" "$BUILD_FILE_PATH" --clobber
