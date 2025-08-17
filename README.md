@@ -27,6 +27,6 @@
 
 ### 2. Установка
 
-- Скачайте [файл релиз](https://github.com/GuFFy12/keenetic-zapret/releases) формата `.ipk` прямо на роутере или скачайте локально и переместите через менеджер [USB устройств](https://help.keenetic.com/hc/en-us/articles/360000799559).
+- Скачайте [файл релиза](https://github.com/GuFFy12/keenetic-zapret/releases) формата `.ipk` прямо на роутере. Также можно скачать локально и переместить через [Менеджер USB-устройств](https://help.keenetic.com/hc/en-us/articles/360000799559).
 
-- Установите пакет через `opkg install <ИМЯ ФАЙЛА>`.
+- Установите пакет через `opkg install <ИМЯ_ФАЙЛА>`.
