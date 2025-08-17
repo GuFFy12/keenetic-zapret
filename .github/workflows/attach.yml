@@ -62,6 +62,7 @@ jobs:
           set -euo pipefail
           IFS=$'\n\t'
 
+          /opt/zapret/install_bin.sh
           /opt/zapret/init.d/sysv/keenetic-zapret start
           EOF
 
