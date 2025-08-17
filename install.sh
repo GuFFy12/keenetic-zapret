@@ -7,15 +7,11 @@ SCRIPT="$(readlink -f "$0" || true)"
 
 ZAPRET_BASE="/opt/zapret"
 ZAPRET_INSTALL_BIN="$ZAPRET_BASE/install_bin.sh"
-ZAPRET_IPSET_GET_CONFIG="$ZAPRET_BASE/ipset/get_config.sh"
 ZAPRET_NDM_HOOK_SCRIPTS="/opt/etc/ndm/netfilter.d/01-zapret.sh"
 KEENETIC_ZAPRET_SCRIPT="$ZAPRET_BASE/init.d/sysv/keenetic-zapret"
 # endregion
 
 # region Configurable variables
-ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB="${ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB:-ask}" # "1" or "0" or "ask"
-ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE="${ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE:-"0 0 * * 0"}"
-
 # If KEENETIC_ZAPRET_BUILD_FILE_URL set then KEENETIC_ZAPRET_REPO and KEENETIC_ZAPRET_TAG are ignored.
 KEENETIC_ZAPRET_BUILD_FILE_URL="${KEENETIC_ZAPRET_BUILD_FILE_URL-}"
 KEENETIC_ZAPRET_REPO="${KEENETIC_ZAPRET_REPO:-"GuFFy12/keenetic-zapret"}"
@@ -23,43 +19,6 @@ KEENETIC_ZAPRET_TAG="${KEENETIC_ZAPRET_TAG-}"
 # endregion
 
 # region Functions
-ask_yes_no() {
-	while true; do
-		echo "$1 [Y/n]: "
-		read -r ask_yes_no_answer </dev/tty
-
-		case "$ask_yes_no_answer" in
-		[yY1]) return 0 ;;
-		[nN0]) return 1 ;;
-		*) echo Invalid choice ;;
-		esac
-	done
-}
-
-ask_value() {
-	while true; do
-		echo "$1 [default: \"$2\"]: "
-		read -r ask_value_answer </dev/tty
-
-		if [ -z "$ask_value_answer" ]; then
-			ask_value_answer="$2"
-		fi
-
-		if ask_yes_no "Is \"$ask_value_answer\" correct?"; then
-			break
-		fi
-	done
-}
-
-set_cronjob() {
-	{
-		{ crontab -l 2>/dev/null || true; } | sed '1,3{/^#/d}' | grep -vF "$3" || true
-		if [ "$1" = "1" ]; then
-			echo "$2 $3"
-		fi
-	} | crontab -
-}
-
 get_ndm_version() {
 	if ! command -v ndmc >/dev/null; then
 		return 1
@@ -97,9 +56,6 @@ uninstall() {
 		fi
 	done
 	IFS="$ifs_old"
-
-	echo Removing cron job for automatic list updates...
-	set_cronjob 0 "" "$ZAPRET_IPSET_GET_CONFIG" || true
 
 	echo Keenetic Zapret has been successfully uninstalled.
 }
@@ -142,27 +98,11 @@ install() {
 	echo Starting Keenetic Zapret...
 	"$KEENETIC_ZAPRET_SCRIPT" start
 
-	echo Downloading latest Zapret ipset list...
-	"$ZAPRET_IPSET_GET_CONFIG"
-
-	if [ "$ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB" = "1" ] || \
-	{ [ "$ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB" = "ask" ] && ask_yes_no "Enable cron job for automatic ipset list updates?"; }; then
-		add_cronjob
-	fi
-
 	echo Keenetic Zapret has been successfully installed.
 }
 
-add_cronjob() {
-	if [ "$ZAPRET_IPSET_GET_CONFIG_ADD_CRONJOB" = "ask" ]; then
-		ask_value "Enter cron schedule" "$ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE"
-		ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE="$ask_value_answer"
-	fi
-	set_cronjob 1 "$ZAPRET_IPSET_GET_CONFIG_CRONJOB_SCHEDULE" "$ZAPRET_IPSET_GET_CONFIG"
-}
-
 usage() {
-	echo "Usage: $SCRIPT [install|uninstall|add-cronjob|remove-cronjob]" >&2
+	echo "Usage: $SCRIPT [install|uninstall]" >&2
 	exit 1
 }
 
@@ -180,17 +120,7 @@ uninstall)
 	uninstall
 	;;
 
-add-cronjob|add_cronjob)
-	add_cronjob
-	;;
-
-remove-cronjob|remove_cronjob)
-	set_cronjob 0 "" "$ZAPRET_IPSET_GET_CONFIG" || true
-	;;
-
 *)
 	usage
 	;;
 esac
-
-exit 0

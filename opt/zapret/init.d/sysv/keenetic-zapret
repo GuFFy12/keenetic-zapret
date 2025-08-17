@@ -47,5 +47,3 @@ restart)
 	usage
 	;;
 esac
-
-exit 0

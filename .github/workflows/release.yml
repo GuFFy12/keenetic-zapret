@@ -1,15 +1,14 @@
-name: Publish release
+name: Attach build file
 
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
 
 permissions:
   contents: write
 
 jobs:
-  publish:
+  attach_build_file:
     runs-on: ubuntu-latest
 
     env:
@@ -36,7 +35,7 @@ jobs:
           "$ZAPRET_IPSET_GET_CONFIG"
           echo "::endgroup::"
 
-      - name: Build .ipk
+      - name: Build package
         id: build
         env:
           CONTROL_DIR: ./CONTROL
@@ -77,8 +76,9 @@ jobs:
           IFS=$'\n\t'
 
           VERSION="${GITHUB_REF_NAME#v}"
-          BUILD_FILE_NAME="$PACKAGE_$VERSION_$ARCHITECTURE.ipk"
+          BUILD_FILE_NAME="${PACKAGE}_${VERSION}_${ARCHITECTURE}.ipk"
           
+          echo "::group::Create package control files"
           mkdir -p "$CONTROL_DIR"
 
           cat > "$CONTROL_DIR/control" <<EOF
@@ -115,7 +115,9 @@ jobs:
           } > "$CONTROL_DIR/conffiles"
 
           chmod 0755 "$CONTROL_DIR/postinst" "$CONTROL_DIR/prerm"
-
+          echo "::endgroup::"
+          
+          echo "::group::Build package"
           tar --owner=0 --group=0 -C "$CONTROL_DIR" -czf ./control.tar.gz .
           tar --owner=0 --group=0 -czf "./data.tar.gz" ./opt/
           echo "2.0" > ./debian-binary
@@ -123,14 +125,18 @@ jobs:
           tar -czf "./$BUILD_FILE_NAME" ./debian-binary ./control.tar.gz ./data.tar.gz
 
           echo "build_file_path=./$BUILD_FILE_NAME" >> "$GITHUB_OUTPUT"
+          echo "::endgroup::"
 
-      - name: Create a new release
+      - name: Attach build file to release
         env:
-            GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+          BUILD_TAG: "${{ github.event.release.tag_name }}"
+          BUILD_FILE_PATH: "${{ steps.build.outputs.build_file_path }}"
         run: |
           set -euo pipefail
           IFS=$'\n\t'
-          BUILD_TAG="${GITHUB_REF_NAME}"
-          BUILD_FILE_PATH="${{ steps.build.outputs.build_file_path }}"
-
-          gh release create "$BUILD_TAG" "$BUILD_FILE_PATH"
+          
+          echo "::group::Attach build file to release"
+          gh release create "$BUILD_TAG" "$BUILD_FILE_PATH" --clobber
+          echo "build_file_path=$BUILD_FILE_PATH" >> "$GITHUB_OUTPUT"
