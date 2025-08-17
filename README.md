@@ -9,7 +9,7 @@
   проверяйте актуальные методы в репозитории и обсуждениях [Zapret](https://github.com/bol-van/zapret).
 
 - Настройка `--dpi-desync-fooling=badsum` в Zapret может работать некорректно если роутер Keenetic находится за другим nat.
-  Как пример таким устройством может быть оптический терминал который преобразует сигнал из оптоволокна.
+  Например таким устройством может быть оптический терминал который стоит до роутера.
   В этом случае данное устройство нужно перевести в режим моста (bridge).
 
 ## Требования
@@ -23,11 +23,11 @@
 
 - В [компонентах KeeneticOS](https://help.keenetic.com/hc/ru/articles/360000358039) нужно включить `Kernel modules for Netfilter` или `Модули ядра подсистемы Netfilter`.
 
-- Опционально отключите [DNS от провайдера](https://help.keenetic.com/hc/ru/articles/360008609399) и настройте [DNS-over-HTTPS](https://help.keenetic.com/hc/ru/articles/360007687159), например от Google: `https://dns.google/dns-query`.
+- Опционально отключите [DNS от провайдера](https://help.keenetic.com/hc/ru/articles/360008609399) и настройте [DNS-over-HTTPS](https://help.keenetic.com/hc/ru/articles/360007687159), например от CloudFlare: `https://cloudflare-dns.com/dns-query`. После его установки начинают работать некоторые сервисы, которые заблокированы по IP, например Instagram (запрещен в России, принадлежит Meta).
 
 ### 2. Установка
 
-- Скачайте [файл релиза](https://github.com/GuFFy12/keenetic-zapret/releases) формата `.ipk` прямо на роутере. Также можно скачать локально и переместить через [Менеджер USB-устройств](https://help.keenetic.com/hc/en-us/articles/360000799559).
+- Скачайте [файл релиза](https://github.com/GuFFy12/keenetic-zapret/releases) формата `.ipk` прямо на роутере. Также можно скачать файл локально и переместить его через [Менеджер USB-устройств](https://help.keenetic.com/hc/en-us/articles/360000799559).
 
 - Установите пакет командой: `opkg install <ИМЯ_ФАЙЛА>`.
 
