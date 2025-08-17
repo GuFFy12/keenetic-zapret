@@ -25,31 +25,8 @@
 
 - Опционально отключите [DNS от провайдера](https://help.keenetic.com/hc/ru/articles/360008609399) и настройте [DNS-over-HTTPS](https://help.keenetic.com/hc/ru/articles/360007687159), например от Google: `https://dns.google/dns-query`.
 
-### 2. Установка необходимых компонентов
+### 2. Установка
 
-- Перед выполнением установки вы опционально можете настроить глобальные переменные которые находятся в начале [установочного файла](https://github.com/GuFFy12/keenetic-zapret/blob/main/install.sh).
+- Скачайте [файл релиз](https://github.com/GuFFy12/keenetic-zapret/releases) формата `.ipk` прямо на роутере или скачайте локально и переместите через менеджер [USB устройств](https://help.keenetic.com/hc/en-us/articles/360000799559).
 
-- Для установки выполните следующую команду:
-
-  ```sh
-  opkg update && opkg install curl && curl -LsSf https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh
-  ```
-
-- Или если хотите установить в режиме оффлайн, то разархивируйте на роутере
-  [файл релиз](https://github.com/GuFFy12/keenetic-zapret/releases/latest) и запустите:
-
-  ```sh
-  sh install.sh
-  ```
-
-- Для удаления выполните соответственно:
-
-  ```sh
-  curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh -s uninstall
-  ```
-
-- Управление cronjob для регулярного обновления ipset list:
-
-  ```sh
-  curl -fL https://raw.githubusercontent.com/GuFFy12/keenetic-zapret/refs/heads/main/install.sh | sh -s <add-cronjob|remove-cronjob>
-  ```
+- Установите пакет через `opkg install <ИМЯ ФАЙЛА>`.
