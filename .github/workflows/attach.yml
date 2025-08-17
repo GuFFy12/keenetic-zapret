@@ -8,7 +8,7 @@ permissions:
   contents: write
 
 jobs:
-  attach_build_file:
+  attach:
     runs-on: ubuntu-latest
 
     env:
@@ -86,7 +86,7 @@ jobs:
           Architecture: $ARCHITECTURE
           Maintainer: $MAINTAINER
           Description: $DESCRIPTION
-          Depends: $(printf '%s\n' $DEPENDS | paste -sd ", " -)
+          Depends: $(printf '%s\n' "$DEPENDS" | paste -sd ", " -)
           EOF
 
           cat > "$CONTROL_DIR/postinst" <<EOF
@@ -125,8 +125,6 @@ jobs:
 
       - name: Attach build file to release
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-
           BUILD_TAG: "${{ github.event.release.tag_name }}"
           BUILD_FILE_PATH: "${{ steps.build.outputs.build_file_path }}"
         run: |
