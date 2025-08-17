@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -16,27 +19,118 @@ jobs:
       - name: Checkout main repository
         uses: actions/checkout@v4
 
-      - name: Downloading Zapret
+      - name: Download Zapret
+        env:
+          ZAPRET_BUILD_FILE_URL: "https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_TAG }}/zapret-${{ env.ZAPRET_TAG }}-openwrt-embedded.tar.gz"
+          ZAPRET_BASE_DIR: ./opt/zapret/
+          ZAPRET_IPSET_GET_CONFIG: ./opt/zapret/ipset/get_config.sh
         run: |
-          ZAPRET_BUILD_FILE_URL="https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_TAG }}/zapret-${{ env.ZAPRET_TAG }}.tar.gz"
-          ZAPRET_BASE_DIR="opt/zapret"
-          ZAPRET_IPSET_GET_CONFIG="$ZAPRET_BASE_DIR/ipset/get_config.sh"
+          set -euo pipefail
+          IFS=$'\n\t'
 
-          echo Installing curl...
-          sudo apt-get install -y curl
-
-          echo Downloading Zapret release...
+          echo "::group::Download & unpack Zapret"
           curl -fL "$ZAPRET_BUILD_FILE_URL" | tar -xz --strip-components=1 -C "$ZAPRET_BASE_DIR"
+          echo "::endgroup::"
 
-          echo Downloading latest Zapret ipset list...
+          echo "::group::Fetch latest Zapret ipset list"
           "$ZAPRET_IPSET_GET_CONFIG"
+          echo "::endgroup::"
+
+      - name: Build .ipk
+        id: build
+        env:
+          CONTROL_DIR: ./CONTROL
+
+          PACKAGE: "${{ github.event.repository.name }}"
+          ARCHITECTURE: all
+          MAINTAINER: "${{ github.event.repository.owner.login }} <${{ github.event.repository.owner.email }}>"
+          DESCRIPTION: "${{ github.event.repository.description }}"
+          DEPENDS: |
+            coreutils-sleep
+            coreutils-sort
+            curl
+            gzip
+            ipset
+            iptables
+            kmod_ndms
+            xtables-addons_legacy
+
+          KEENETIC_ZAPRET_SCRIPT: /opt/zapret/init.d/sysv/keenetic-zapret
+
+          IPSET_CONFIGS: |
+            zapret-ip
+            zapret-ip6
+            zapret-ip-exclude
+            zapret-ip-exclude6
+            zapret-ip-user
+            zapret-ip-user6
+            zapret-hosts-user
+            zapret-hosts
+            zapret-ip-ipban
+            zapret-ip-ipban6
+            zapret-ip-user-ipban
+            zapret-ip-user-ipban6
+            zapret-hosts-user-ipban
+            zapret-hosts-user-exclude
+        run: |
+          set -euo pipefail
+          IFS=$'\n\t'
+
+          VERSION="${GITHUB_REF_NAME#v}"
+          BUILD_FILE_NAME="$PACKAGE_$VERSION_$ARCHITECTURE.ipk"
+          
+          mkdir -p "$CONTROL_DIR"
+
+          cat > "$CONTROL_DIR/control" <<EOF
+          Package: $PACKAGE
+          Version: $VERSION
+          Architecture: $ARCHITECTURE
+          Maintainer: $MAINTAINER
+          Description: $DESCRIPTION
+          Depends: $(echo "$DEPENDS" | paste -sd ", " -)
+          EOF
+
+          cat > "$CONTROL_DIR/postinst" <<EOF
+          #!/opt/bin/busybox sh
+          set -euo pipefail
+          IFS=$'\n\t'
+
+          $KEENETIC_ZAPRET_SCRIPT start
+          EOF
+
+          cat > "$CONTROL_DIR/prerm" <<EOF
+          #!/opt/bin/busybox sh
+          set -euo pipefail
+          IFS=$'\n\t'
+
+          $KEENETIC_ZAPRET_SCRIPT stop
+          EOF
+
+          {
+            echo "/opt/zapret/config"
+            for config in $IPSET_CONFIGS; do
+              echo "/opt/zapret/ipset/$config.txt"
+              echo "/opt/zapret/ipset/$config.txt.gz"
+            done
+          } > "$CONTROL_DIR/conffiles"
+
+          chmod 0755 "$CONTROL_DIR/postinst" "$CONTROL_DIR/prerm"
+
+          tar --owner=0 --group=0 -C "$CONTROL_DIR" -czf ./control.tar.gz .
+          tar --owner=0 --group=0 -czf "./data.tar.gz" ./opt/
+          echo "2.0" > ./debian-binary
+
+          tar -czf "./$BUILD_FILE_NAME" ./debian-binary ./control.tar.gz ./data.tar.gz
+
+          echo "build_file_path=./$BUILD_FILE_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Create a new release
-        run: |
-          BUILD_TAG="${GITHUB_REF#refs/tags/}"
-          BUILD_FILE_PATH="/tmp/${{ github.event.repository.name }}-$BUILD_TAG.tar.gz"
-
-          tar -czf "$BUILD_FILE_PATH" --exclude={.git,.github,.gitignore} .
-          gh release create "$BUILD_TAG" "$BUILD_FILE_PATH" --generate-notes
         env:
-          GH_TOKEN: "${{ secrets.PERSONAL_ACCESS_TOKEN }}"
+            GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          IFS=$'\n\t'
+          BUILD_TAG="${GITHUB_REF_NAME}"
+          BUILD_FILE_PATH="${{ steps.build.outputs.build_file_path }}"
+
+          gh release create "$BUILD_TAG" "$BUILD_FILE_PATH"

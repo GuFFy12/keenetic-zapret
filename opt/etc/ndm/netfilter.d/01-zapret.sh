@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-if [ "$type" != "iptables" ] || [ "$table" != "mangle" ]; then
+if [ "$type" != iptables ] || [ "$table" != mangle ]; then
 	exit 0
 fi
 
