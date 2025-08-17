@@ -42,7 +42,7 @@ jobs:
 
           PACKAGE: "${{ github.event.repository.name }}"
           ARCHITECTURE: all
-          MAINTAINER: "${{ github.event.repository.owner.login }} <${{ github.event.repository.owner.email }}>"
+          MAINTAINER: "${{ github.repository_owner}} <${{ github.repository_owner }}@users.noreply.github.com>"
           DESCRIPTION: "${{ github.event.repository.description }}"
           DEPENDS: |
             coreutils-sleep
@@ -86,7 +86,7 @@ jobs:
           Architecture: $ARCHITECTURE
           Maintainer: $MAINTAINER
           Description: $DESCRIPTION
-          Depends: $(echo "$DEPENDS" | paste -sd ", " -)
+          Depends: $(printf '%s\n' $DEPENDS | paste -sd ", " -)
           EOF
 
           cat > "$CONTROL_DIR/postinst" <<EOF
@@ -114,13 +114,12 @@ jobs:
           } > "$CONTROL_DIR/conffiles"
 
           chmod 0755 "$CONTROL_DIR/postinst" "$CONTROL_DIR/prerm"
-          
-          echo "::group::Build package"
+
           tar --owner=0 --group=0 -C "$CONTROL_DIR" -czf ./control.tar.gz .
           tar --owner=0 --group=0 -czf "./data.tar.gz" ./opt/
           echo "2.0" > ./debian-binary
 
-          tar -czf "./$BUILD_FILE_NAME" ./debian-binary ./control.tar.gz ./data.tar.gz
+          tar -czf "./$BUILD_FILE_NAME" debian-binary control.tar.gz data.tar.gz
 
           echo "build_file_path=./$BUILD_FILE_NAME" >> "$GITHUB_OUTPUT"
 
