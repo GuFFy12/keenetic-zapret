@@ -21,7 +21,6 @@ jobs:
       - name: Download Zapret
         env:
           ZAPRET_BUILD_FILE_URL: "https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_TAG }}/zapret-${{ env.ZAPRET_TAG }}-openwrt-embedded.tar.gz"
-          ZAPRET_IPSET_GET_CONFIG: ./opt/zapret/ipset/get_config.sh
         run: |
           set -euo pipefail
           IFS=$'\n\t'
@@ -31,59 +30,31 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::Fetch latest Zapret ipset list"
-          "$ZAPRET_IPSET_GET_CONFIG"
+          /opt/zapret/ipset/get_config.sh
           echo "::endgroup::"
 
       - name: Build package
         id: build
         env:
           PACKAGE: "${{ github.event.repository.name }}"
-          ARCHITECTURE: all
           MAINTAINER: "${{ github.repository_owner}} <${{ github.repository_owner }}@users.noreply.github.com>"
           DESCRIPTION: "${{ github.event.repository.description }}"
-          DEPENDS: |
-            coreutils-sleep
-            coreutils-sort
-            curl
-            gzip
-            ipset
-            iptables
-            kmod_ndms
-            xtables-addons_legacy
-
-          KEENETIC_ZAPRET_SCRIPT: /opt/zapret/init.d/sysv/keenetic-zapret
-
-          IPSET_CONFIGS: |
-            zapret-ip
-            zapret-ip6
-            zapret-ip-exclude
-            zapret-ip-exclude6
-            zapret-ip-user
-            zapret-ip-user6
-            zapret-hosts-user
-            zapret-hosts
-            zapret-ip-ipban
-            zapret-ip-ipban6
-            zapret-ip-user-ipban
-            zapret-ip-user-ipban6
-            zapret-hosts-user-ipban
-            zapret-hosts-user-exclude
         run: |
           set -euo pipefail
           IFS=$'\n\t'
 
           VERSION="${GITHUB_REF_NAME#v}"
-          BUILD_FILE_NAME="${PACKAGE}_${VERSION}_${ARCHITECTURE}.ipk"
+          BUILD_FILE_NAME="${PACKAGE}_${VERSION}_all.ipk"
 
           mkdir -p ./CONTROL
 
           cat > ./CONTROL/control <<EOF
           Package: $PACKAGE
           Version: $VERSION
-          Architecture: $ARCHITECTURE
+          Architecture: all
           Maintainer: $MAINTAINER
           Description: $DESCRIPTION
-          Depends: $(echo "$DEPENDS" | xargs | sed 's/ /, /g')
+          Depends: coreutils-sleep, coreutils-sort, curl, gzip, ipset, iptables, kmod_ndms, xtables-addons_legacy
           EOF
 
           cat > ./CONTROL/postinst <<EOF
@@ -91,7 +62,7 @@ jobs:
           set -euo pipefail
           IFS=$'\n\t'
 
-          $KEENETIC_ZAPRET_SCRIPT start
+          /opt/zapret/init.d/sysv/keenetic-zapret start
           EOF
 
           cat > ./CONTROL/prerm <<EOF
@@ -99,16 +70,13 @@ jobs:
           set -euo pipefail
           IFS=$'\n\t'
 
-          $KEENETIC_ZAPRET_SCRIPT stop
+          /opt/zapret/init.d/sysv/keenetic-zapret stop
           EOF
 
-          {
-            echo "/opt/zapret/config"
-            for config in $IPSET_CONFIGS; do
-              echo "/opt/zapret/ipset/$config.txt"
-              echo "/opt/zapret/ipset/$config.txt.gz"
-            done
-          } > ./CONTROL/conffiles
+          cat > ./CONTROL/conffiles <<EOF
+          /opt/zapret/config
+          /opt/zapret/ipset/zapret-hosts-user.txt
+          EOF
 
           chmod 0755 ./CONTROL/postinst ./CONTROL/prerm
 
