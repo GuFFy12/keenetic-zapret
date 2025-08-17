@@ -21,14 +21,13 @@ jobs:
       - name: Download Zapret
         env:
           ZAPRET_BUILD_FILE_URL: "https://github.com/bol-van/zapret/releases/download/${{ env.ZAPRET_TAG }}/zapret-${{ env.ZAPRET_TAG }}-openwrt-embedded.tar.gz"
-          ZAPRET_BASE_DIR: ./opt/zapret/
           ZAPRET_IPSET_GET_CONFIG: ./opt/zapret/ipset/get_config.sh
         run: |
           set -euo pipefail
           IFS=$'\n\t'
 
           echo "::group::Download & unpack Zapret"
-          curl -fL "$ZAPRET_BUILD_FILE_URL" | tar -xz --strip-components=1 -C "$ZAPRET_BASE_DIR"
+          curl -fL "$ZAPRET_BUILD_FILE_URL" | tar -xz --strip-components=1 -C ./opt/zapret/
           echo "::endgroup::"
 
           echo "::group::Fetch latest Zapret ipset list"
@@ -38,8 +37,6 @@ jobs:
       - name: Build package
         id: build
         env:
-          CONTROL_DIR: ./CONTROL
-
           PACKAGE: "${{ github.event.repository.name }}"
           ARCHITECTURE: all
           MAINTAINER: "${{ github.repository_owner}} <${{ github.repository_owner }}@users.noreply.github.com>"
@@ -78,18 +75,18 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           BUILD_FILE_NAME="${PACKAGE}_${VERSION}_${ARCHITECTURE}.ipk"
 
-          mkdir -p "$CONTROL_DIR"
+          mkdir -p ./CONTROL
 
-          cat > "$CONTROL_DIR/control" <<EOF
+          cat > ./CONTROL/control <<EOF
           Package: $PACKAGE
           Version: $VERSION
           Architecture: $ARCHITECTURE
           Maintainer: $MAINTAINER
           Description: $DESCRIPTION
-          Depends: $(echo "$DEPENDS" | tr '\n' ', ')
+          Depends: $(echo "$DEPENDS" | xargs | sed 's/ /, /g')
           EOF
 
-          cat > "$CONTROL_DIR/postinst" <<EOF
+          cat > ./CONTROL/postinst <<EOF
           #!/opt/bin/busybox sh
           set -euo pipefail
           IFS=$'\n\t'
@@ -97,7 +94,7 @@ jobs:
           $KEENETIC_ZAPRET_SCRIPT start
           EOF
 
-          cat > "$CONTROL_DIR/prerm" <<EOF
+          cat > ./CONTROL/prerm <<EOF
           #!/opt/bin/busybox sh
           set -euo pipefail
           IFS=$'\n\t'
@@ -111,12 +108,12 @@ jobs:
               echo "/opt/zapret/ipset/$config.txt"
               echo "/opt/zapret/ipset/$config.txt.gz"
             done
-          } > "$CONTROL_DIR/conffiles"
+          } > ./CONTROL/conffiles
 
-          chmod 0755 "$CONTROL_DIR/postinst" "$CONTROL_DIR/prerm"
+          chmod 0755 ./CONTROL/postinst ./CONTROL/prerm
 
-          tar --owner=0 --group=0 -C "$CONTROL_DIR" -czf ./control.tar.gz .
-          tar --owner=0 --group=0 -czf "./data.tar.gz" ./opt/
+          tar --owner=0 --group=0 -czf ./control.tar.gz -C ./CONTROL .
+          tar --owner=0 --group=0 -czf ./data.tar.gz ./opt/
           echo "2.0" > ./debian-binary
 
           tar -czf "./$BUILD_FILE_NAME" debian-binary control.tar.gz data.tar.gz
